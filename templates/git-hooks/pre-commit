@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# pre-commit — 大きなファイル・重み/データ類を、うっかりcommitするのを止める。
+#
+# 止めるもの（今回ステージされた追加・変更ファイルのみ）:
+#   1. 5MB を超えるファイル（変更は GIT_MAX_FILE_MB=20 のように環境変数で）
+#   2. 拡張子が重み・データ類のもの: h5 hdf5 npy npz pt pth ckpt safetensors pkl pickle zip tar gz 7z wav
+# どうしても入れたい時（1回だけ）: git commit --no-verify
+#
+# 設置（全リポジトリに効く。リポジトリ個別の hooks は使われなくなる点に注意）:
+#   mkdir -p ~/.config/git/hooks
+#   cp tools/git-hooks/pre-commit ~/.config/git/hooks/pre-commit
+#   chmod +x ~/.config/git/hooks/pre-commit
+#   git config --global core.hooksPath ~/.config/git/hooks
+set -u
+MAX_MB=${GIT_MAX_FILE_MB:-5}
+MAX=$((MAX_MB * 1024 * 1024))
+BAD_EXT='h5|hdf5|npy|npz|pt|pth|ckpt|safetensors|pkl|pickle|zip|tar|gz|7z|wav'
+
+bad=0
+while IFS= read -r -d '' f; do
+    size=$(git cat-file -s ":$f" 2>/dev/null || echo 0)
+    ext=${f##*.}; ext=$(printf '%s' "$ext" | tr 'A-Z' 'a-z')
+    msg=""
+    if [ "$size" -gt "$MAX" ]; then
+        msg="${size} バイト（上限 ${MAX_MB}MB）"
+    elif [ "$f" != "$ext" ] && printf '%s' "$ext" | grep -Eq "^(${BAD_EXT})$"; then
+        msg="重み・データ類の拡張子 .${ext}"
+    fi
+    if [ -n "$msg" ]; then
+        [ "$bad" = 0 ] && echo "[pre-commit] commit を止めました:" >&2
+        echo "  - $f : $msg" >&2
+        bad=1
+    fi
+done < <(git diff --cached --name-only --diff-filter=AM -z)
+
+if [ "$bad" = 1 ]; then
+    echo "対処: git restore --staged <ファイル> で外す／.gitignore に足す。" >&2
+    echo "どうしても入れるなら: git commit --no-verify（履歴に残り続けるので慎重に）" >&2
+    exit 1
+fi
+exit 0

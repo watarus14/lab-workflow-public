@@ -1,0 +1,10 @@
+# lab.conf — 研究室固有の値。このファイルを lab.conf にコピーして、右辺を自分の研究室の値に書き換える。
+#   cp lab.conf.example lab.conf   →   編集   →   bin/render.sh --lab ~/lab-workflow-lab
+# lab.conf は Git 管理外（.gitignore 済み）。文書中の仮の名前（your-cpu-server など）が、ここの値に置き換わる。
+SERVER_CPU=your-cpu-server   # CPU計算機のログインノード名（~/.ssh/config の Host）
+SERVER_GPU=your-gpu-server   # GPU計算機のログインノード名（CPUと同じ1台なら同じ値にする）
+SERVER_USER=your-user        # サーバー上のユーザー名
+GITHUB_USER=your-github-id   # GitHubのユーザー名または組織名
+VPN=your-vpn                 # 学外から接続するときのVPN名（不要なら空でも可）
+CHAT_CHANNEL=your-channel    # サーバー運用の相談先チャンネル名
+LAB_NAME=your-lab            # 研究室名
